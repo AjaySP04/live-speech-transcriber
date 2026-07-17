@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Couplet } from './Couplet';
 import type { TranscriberState } from './useTranscriber';
 import type { Status } from '../core/types';
@@ -20,11 +19,6 @@ export function LiveView({
   showOriginal: boolean;
   onShowOriginal: (v: boolean) => void;
 }) {
-  const endRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [t.utterances.length]);
-
   return (
     <main>
       <div className="controls">
@@ -54,9 +48,11 @@ export function LiveView({
             shows the original script with its English translation.
           </p>
         ) : (
-          t.utterances.map((u, i) => <Couplet key={i} u={u} />)
+          // newest first: the latest line is always visible without scrolling
+          [...t.utterances]
+            .reverse()
+            .map((u, i) => <Couplet key={t.utterances.length - 1 - i} u={u} />)
         )}
-        <div ref={endRef} />
       </div>
     </main>
   );

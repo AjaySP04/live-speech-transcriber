@@ -110,6 +110,17 @@ Browsers only allow microphone access on a secure context — `localhost` is exe
 3. On the other device, open `https://<host-ip>:8080`.
 4. Accept the browser's self-signed-certificate warning — expected for a local cert.
 
+## Remote access (free public URL)
+
+To use Tarjuman from anywhere — or from a phone without certificate warnings — expose the local server through a free Cloudflare quick tunnel:
+
+```bash
+brew install cloudflared   # once
+./scripts/tunnel.sh        # prints an https://….trycloudflare.com URL
+```
+
+The URL is HTTPS with a real certificate, so mobile microphone access works out of the box. It changes on every run and lives only while the tunnel and server are running; for a permanent URL, set up a [named Cloudflare tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) with your own domain. Anyone with the URL can reach your instance while the tunnel is up — there is no authentication, so treat the URL as a secret and stop the tunnel when done.
+
 ## Native (Metal) mode on macOS
 
 Docker on macOS cannot reach the Apple GPU. Running natively lets whisper.cpp use Metal, which makes even `large-v3` responsive:

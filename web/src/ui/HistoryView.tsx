@@ -42,8 +42,8 @@ export function HistoryView({ showOriginal }: { showOriginal: boolean }) {
       {detail && (
         <div className={`transcript${showOriginal ? '' : ' hide-original'}`}>
           <h3 className="detail-title">{detail.title || 'Untitled conversation'}</h3>
-          {detail.utterances.map((u, i) => (
-            <Couplet key={i} u={u} />
+          {[...detail.utterances].reverse().map((u, i) => (
+            <Couplet key={detail.utterances.length - 1 - i} u={u} />
           ))}
         </div>
       )}

@@ -177,7 +177,15 @@ main { max-width: 680px; margin: 0 auto; padding: 0.6rem 1.25rem 3rem; }
 
 /* ---------- transcript: translation couplets ---------- */
 
-.transcript { display: flex; flex-direction: column; gap: 0.65rem; }
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 68vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
 
 .couplet {
   background: var(--card);

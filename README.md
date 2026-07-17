@@ -39,7 +39,7 @@ Everything runs on your own hardware. No cloud APIs, no telemetry, no audio ever
 - **Live transcription + translation** — each utterance is decoded twice by whisper.cpp: once for the original-script text with automatic language detection, once for the English translation. An `english_only` mode halves the work for constrained devices.
 - **Speaker diarization** — a NeMo TitaNet speaker-embedding model plus online cosine clustering assigns stable `Person N` labels within a session, with a short-utterance guard that prevents "yeah"/"okay" blips from spawning phantom speakers.
 - **Conversation history** — sessions and utterances (speaker, language, original text, English text, timestamps) persist to a single SQLite file; a history tab replays any past conversation.
-- **Zero-dependency frontend** — one HTML file, vanilla JS, an `AudioWorklet` for capture, and a WebSocket. No build step, no framework, renders fine on a phone.
+- **React frontend with a portable core** — the web UI is React + TypeScript (Vite), with the WebSocket client, API client, and domain types isolated in a platform-neutral `web/src/core/` module designed to be reused by a future React Native mobile app. Light and dark themes follow the system, with a manual override.
 - **One small binary** — Rust + `axum` serves the UI, REST API, and WebSocket; whisper.cpp, Silero VAD, and sherpa-onnx run in-process. Deploys via Docker Compose or bare `cargo run`.
 - **ARM/IoT ready** — the whole stack cross-compiles for `linux/arm64`; the long-term target is always-on Pi-class listening devices.
 
@@ -109,6 +109,17 @@ Browsers only allow microphone access on a secure context — `localhost` is exe
 2. Recreate the container: `docker compose up -d --force-recreate` (the host `config.toml` is volume-mounted). On first TLS start a self-signed certificate is generated into `./data/cert.pem` / `./data/key.pem`.
 3. On the other device, open `https://<host-ip>:8080`.
 4. Accept the browser's self-signed-certificate warning — expected for a local cert.
+
+## Remote access (free public URL)
+
+To use Tarjuman from anywhere — or from a phone without certificate warnings — expose the local server through a free Cloudflare quick tunnel:
+
+```bash
+brew install cloudflared   # once
+./scripts/tunnel.sh        # prints an https://….trycloudflare.com URL
+```
+
+The URL is HTTPS with a real certificate, so mobile microphone access works out of the box. It changes on every run and lives only while the tunnel and server are running; for a permanent URL, set up a [named Cloudflare tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) with your own domain. Anyone with the URL can reach your instance while the tunnel is up — there is no authentication, so treat the URL as a secret and stop the tunnel when done.
 
 ## Native (Metal) mode on macOS
 
@@ -201,20 +212,33 @@ src/
 ├── whisper.rs     # whisper.cpp wrapper: transcribe + translate
 ├── speakers.rs    # speaker embeddings + online cosine clustering
 └── db.rs          # SQLite: sessions, utterances, speaker centroids
-static/            # index.html, app.js, worklet.js, style.css — no build step
+web/               # React + TypeScript frontend (Vite)
+├── src/core/      # platform-neutral: WS client, API client, types (React Native-ready)
+├── src/audio/     # web mic capture (AudioWorklet + downsampling)
+├── src/ui/        # components, hooks, theme
+└── public/        # worklet.js
+static/            # BUILD OUTPUT of `npm run build` (gitignored; served by the server)
 scripts/           # fetch-models.sh, entrypoint.sh
 tests/             # integration tests + audio fixture
-docs/              # design spec and implementation plan
 ```
 
 ## Development
 
-Prerequisites: Rust (stable, 1.85+), `cmake` (for sherpa-onnx), and ~10 min for the first build (it compiles whisper.cpp and sherpa-onnx from source).
+Prerequisites: Rust (stable, 1.85+), Node 20+, `cmake` (for sherpa-onnx), and ~10 min for the first build (it compiles whisper.cpp and sherpa-onnx from source).
 
 ```bash
-./scripts/fetch-models.sh tiny        # test models (~120 MB total)
-cargo test -- --test-threads=1        # full suite (single-threaded: heavy native inference)
-LT_WHISPER_MODEL=tiny cargo run       # dev server on :8080
+./scripts/fetch-models.sh tiny        # test models (~120 MB total) — REQUIRED before cargo test
+cargo test -- --test-threads=1        # backend suite (single-threaded: heavy native inference)
+(cd web && npm install && npm test)   # frontend unit tests (vitest)
+(cd web && npm run build)             # build the frontend into static/
+LT_WHISPER_MODEL=tiny cargo run       # serves API + built UI on :8080
+```
+
+For frontend work with hot reload, run the backend and the Vite dev server side by side:
+
+```bash
+LT_WHISPER_MODEL=tiny cargo run       # terminal 1 — backend on :8080
+cd web && npm run dev                 # terminal 2 — UI on :5173, proxies /api and /ws to :8080
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow, test conventions, and architecture notes.

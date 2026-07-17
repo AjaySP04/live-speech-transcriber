@@ -4,3 +4,6 @@ data
 .git
 docs
 tests/fixtures
+static
+web/node_modules
+.superpowers

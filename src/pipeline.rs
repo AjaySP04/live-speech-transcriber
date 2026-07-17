@@ -144,14 +144,21 @@ fn handle_utterance(
             }
         }
     } else {
-        let orig = match deps.whisper.transcribe(&audio) {
+        // Both passes decode the same audio independently (whisper states share
+        // only the immutable model weights), so run them in parallel.
+        let (orig, eng) = std::thread::scope(|s| {
+            let eng = s.spawn(|| deps.whisper.translate(&audio));
+            let orig = deps.whisper.transcribe(&audio);
+            (orig, eng.join().expect("translate thread panicked"))
+        });
+        let orig = match orig {
             Ok(t) => t,
             Err(e) => {
                 tracing::error!("transcribe failed: {e:#}");
                 return;
             }
         };
-        let eng = match deps.whisper.translate(&audio) {
+        let eng = match eng {
             Ok(t) => t.text,
             Err(e) => {
                 tracing::error!("translate failed: {e:#}");

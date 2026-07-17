@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Manual runs from any branch (pick the branch in the "Run workflow" dropdown).
+  workflow_dispatch:
+
+# Deployment (Vercel) is intentionally not wired up yet — CI only.
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (vitest + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type-check and build
+        run: npm run build
+
+  backend:
+    name: Backend (cargo test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      # Caches cargo registry + target dir; keys off Cargo.lock automatically.
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Cache models
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: models-tiny-titanet-v1
+
+      - name: Fetch test models
+        run: ./scripts/fetch-models.sh tiny
+
+      # Two cache hazards force the native -sys crates to rebuild every job:
+      # 1. rust-cache prunes the shared libraries produced by ort-sys (ONNX
+      #    Runtime, downloaded) and sherpa-rs-sys (cmake-built) while their
+      #    "fresh" fingerprints survive — linking then fails with
+      #    `unable to find library -lonnxruntime / -lsherpa-onnx-c-api`.
+      # 2. whisper.cpp builds with native CPU optimizations (-march=native),
+      #    and GitHub's runner fleet is heterogeneous — a whisper build cached
+      #    on an AMX/AVX-512 machine SIGILLs ("AMX is not ready to be used!",
+      #    illegal instruction) when a later job lands on an older CPU.
+      # Rebuilding the three -sys crates per job keeps the cache for the ~200
+      # pure-Rust dependencies, which is still the bulk of a cold build.
+      - name: Rebuild native -sys crates on this runner's CPU
+        run: |
+          rm -rf target/debug/build/ort-sys-* target/debug/build/sherpa-rs-sys-* target/debug/build/whisper-rs-sys-*
+          rm -rf target/debug/.fingerprint/ort-sys-* target/debug/.fingerprint/sherpa-rs-sys-* target/debug/.fingerprint/whisper-rs-sys-*
+
+      - name: Run tests
+        # Single-threaded: the whisper/speaker/pipeline tests run real
+        # inference and are memory-heavy on shared runners.
+        run: cargo test -- --test-threads=1

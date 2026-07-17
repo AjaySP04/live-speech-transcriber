@@ -58,6 +58,18 @@ jobs:
       - name: Fetch test models
         run: ./scripts/fetch-models.sh tiny
 
+      # rust-cache prunes the native shared libraries produced by the ort-sys
+      # (ONNX Runtime, downloaded) and sherpa-rs-sys (cmake-built) build scripts,
+      # but their "fresh" fingerprints survive — cargo then skips the build
+      # scripts and linking fails with `unable to find library -lonnxruntime /
+      # -lsherpa-onnx-c-api`. Deleting their build dirs + fingerprints forces the
+      # build scripts to re-run each job while keeping the (much bigger)
+      # whisper.cpp and dependency compilation cached.
+      - name: Regenerate cache-pruned native libraries
+        run: |
+          rm -rf target/debug/build/ort-sys-* target/debug/build/sherpa-rs-sys-*
+          rm -rf target/debug/.fingerprint/ort-sys-* target/debug/.fingerprint/sherpa-rs-sys-*
+
       - name: Run tests
         # Single-threaded: the whisper/speaker/pipeline tests run real
         # inference and are memory-heavy on shared runners.

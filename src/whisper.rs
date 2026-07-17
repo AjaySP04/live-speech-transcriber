@@ -22,9 +22,12 @@ pub fn i16_to_f32(samples: &[i16]) -> Vec<f32> {
 
 impl WhisperEngine {
     pub fn new(model_path: &Path, threads: i32) -> Result<Self> {
+        let mut ctx_params = WhisperContextParameters::default();
+        // Noticeably faster attention on Metal/GPU backends, no accuracy cost.
+        ctx_params.flash_attn(true);
         let ctx = WhisperContext::new_with_params(
             model_path.to_str().expect("model path must be utf-8"),
-            WhisperContextParameters::default(),
+            ctx_params,
         )?;
         Ok(Self { ctx, threads })
     }

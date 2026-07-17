@@ -13,12 +13,12 @@ export function Couplet({ u }: { u: Utterance }) {
         <span className="lang">{u.lang}</span>
         <span className="time">{formatTime(u.start_ms)}</span>
       </div>
+      <p className="english">{u.english_text}</p>
       {u.original_text && (
         <p className="original" dir="auto">
           {u.original_text}
         </p>
       )}
-      <p className="english">{u.english_text}</p>
     </article>
   );
 }

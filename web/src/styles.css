@@ -214,20 +214,24 @@ main { max-width: 680px; margin: 0 auto; padding: 0.6rem 1.25rem 3rem; }
 .couplet .lang { color: var(--ink-2); text-transform: uppercase; }
 .couplet .time { color: var(--ink-2); margin-left: auto; }
 
+/* the English interpretation is the primary line… */
+.couplet .english {
+  color: var(--ink);
+  font-size: 1.18rem;
+  line-height: 1.55;
+}
+
+/* …and the original script sits beneath it as the smaller source reference */
 .couplet .original {
   font-family: var(--font-orig);
-  font-size: 1.28rem;
-  line-height: 1.9;
+  font-size: 0.98rem;
+  line-height: 1.8;
+  color: var(--ink-2);
+  margin-top: 0.2rem;
   unicode-bidi: plaintext;
 }
 
-.couplet .english { color: var(--ink-2); font-size: 0.95rem; margin-top: 0.15rem; }
-
-/* the interpretation stands alone when there is no original (english_only mode) */
-.couplet.no-original .english { color: var(--ink); font-size: 1.05rem; }
-
 .transcript.hide-original .original { display: none; }
-.transcript.hide-original .english { color: var(--ink); font-size: 1.05rem; }
 
 /* ---------- history ---------- */
 
@@ -259,7 +263,7 @@ main { max-width: 680px; margin: 0 auto; padding: 0.6rem 1.25rem 3rem; }
 @media (max-width: 480px) {
   header { padding: 1rem 1rem 0.6rem; }
   main { padding: 0.4rem 0.8rem 2.5rem; }
-  .couplet .original { font-size: 1.16rem; }
+  .couplet .english { font-size: 1.08rem; }
   .switch { margin-left: 0; }
 }
 

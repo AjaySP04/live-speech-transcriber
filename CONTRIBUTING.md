@@ -63,6 +63,7 @@ A few interface contracts worth knowing before you change things:
 - **Event JSON shapes** (`PipelineEvent` in `src/pipeline.rs`) and REST shapes (`src/db.rs` structs) are mirrored by `web/src/core/types.ts` — change them in lockstep.
 - **`web/src/core/` must stay platform-neutral** — no DOM, no `window`/`document`/`location`. It is the module a future React Native app imports; DOM-specific code lives in `web/src/audio/` and `web/src/ui/`.
 - **Never use `dangerouslySetInnerHTML`** — all transcript text is server-originated; React's default text rendering is the XSS boundary.
+- **Content policy and post-transcript actions belong in the harness** (`src/harness/`), not inline in the pipeline. Implement the `Guardrail` trait (inspect/rewrite/block an utterance) or the `Tool` trait (side-effectful actions after guardrails pass) and register it in `Harness::from_config` — the pipeline itself should never grow policy logic.
 
 ## Code style
 

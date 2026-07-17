@@ -14,10 +14,12 @@ export function LiveView({
   t,
   showOriginal,
   onShowOriginal,
+  targetLang,
 }: {
   t: TranscriberState;
   showOriginal: boolean;
   onShowOriginal: (v: boolean) => void;
+  targetLang: string;
 }) {
   return (
     <main>
@@ -51,7 +53,9 @@ export function LiveView({
           // newest first: the latest line is always visible without scrolling
           [...t.utterances]
             .reverse()
-            .map((u, i) => <Couplet key={t.utterances.length - 1 - i} u={u} />)
+            .map((u, i) => (
+              <Couplet key={t.utterances.length - 1 - i} u={u} targetLang={targetLang} />
+            ))
         )}
       </div>
     </main>

@@ -22,7 +22,12 @@ async fn main() -> anyhow::Result<()> {
     let whisper = Arc::new(WhisperEngine::new(&whisper_path, cfg.whisper_threads)?);
     let db = Arc::new(Mutex::new(Db::open(&format!("{}/transcriber.db", cfg.data_dir))?));
 
-    let state = Arc::new(server::AppState { whisper, db, cfg: cfg.clone() });
+    let state = Arc::new(server::AppState {
+        whisper: std::sync::RwLock::new(whisper),
+        db,
+        settings: std::sync::RwLock::new(server::AppState::runtime_settings(&cfg)),
+        cfg: cfg.clone(),
+    });
     let app = server::router(state);
     let addr: std::net::SocketAddr = format!("0.0.0.0:{}", cfg.port).parse()?;
 

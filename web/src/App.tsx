@@ -1,14 +1,47 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { LiveView } from './ui/LiveView';
 import { HistoryView } from './ui/HistoryView';
+import { SettingsBar } from './ui/SettingsBar';
 import { useTranscriber } from './ui/useTranscriber';
 import { useTheme } from './ui/theme';
+import { fetchSettings, updateSettings } from './core/api';
+import type { Settings } from './core/types';
 
 export default function App() {
   const [tab, setTab] = useState<'live' | 'history'>('live');
   const [showOriginal, setShowOriginal] = useState(true);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const t = useTranscriber();
   const { theme, cycle } = useTheme();
+  const pollRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    fetchSettings().then(setSettings).catch(() => {});
+    return () => {
+      if (pollRef.current) window.clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const changeSettings = useCallback((patch: { model?: string; target_lang?: string }) => {
+    updateSettings(patch)
+      .then((s) => {
+        setSettings(s);
+        // A model switch loads in the background; poll until it lands.
+        if (s.loading && !pollRef.current) {
+          pollRef.current = window.setInterval(async () => {
+            const cur = await fetchSettings().catch(() => null);
+            if (cur) setSettings(cur);
+            if (cur && !cur.loading && pollRef.current) {
+              window.clearInterval(pollRef.current);
+              pollRef.current = null;
+            }
+          }, 2000);
+        }
+      })
+      .catch((e) => alert(`Could not update settings: ${e.message}`));
+  }, []);
+
+  const targetLang = settings?.target_lang ?? 'en';
 
   return (
     <>
@@ -40,10 +73,17 @@ export default function App() {
         </nav>
       </header>
 
+      <SettingsBar settings={settings} onChange={changeSettings} />
+
       {tab === 'live' ? (
-        <LiveView t={t} showOriginal={showOriginal} onShowOriginal={setShowOriginal} />
+        <LiveView
+          t={t}
+          showOriginal={showOriginal}
+          onShowOriginal={setShowOriginal}
+          targetLang={targetLang}
+        />
       ) : (
-        <HistoryView showOriginal={showOriginal} />
+        <HistoryView showOriginal={showOriginal} targetLang={targetLang} />
       )}
     </>
   );

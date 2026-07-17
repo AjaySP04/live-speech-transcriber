@@ -3,7 +3,13 @@ import { fetchSession, fetchSessions } from '../core/api';
 import type { SessionDetail, SessionSummary } from '../core/types';
 import { Couplet } from './Couplet';
 
-export function HistoryView({ showOriginal }: { showOriginal: boolean }) {
+export function HistoryView({
+  showOriginal,
+  targetLang,
+}: {
+  showOriginal: boolean;
+  targetLang: string;
+}) {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [detail, setDetail] = useState<SessionDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +49,7 @@ export function HistoryView({ showOriginal }: { showOriginal: boolean }) {
         <div className={`transcript${showOriginal ? '' : ' hide-original'}`}>
           <h3 className="detail-title">{detail.title || 'Untitled conversation'}</h3>
           {[...detail.utterances].reverse().map((u, i) => (
-            <Couplet key={detail.utterances.length - 1 - i} u={u} />
+            <Couplet key={detail.utterances.length - 1 - i} u={u} targetLang={targetLang} />
           ))}
         </div>
       )}

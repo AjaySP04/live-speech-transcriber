@@ -9,6 +9,8 @@ const MIN_SAMPLES: usize = 17_600;
 pub struct Transcription {
     pub lang: String,
     pub text: String,
+    /// Mean token probability across all decoded tokens (0.0–1.0).
+    pub confidence: f32,
 }
 
 pub struct WhisperEngine {
@@ -66,14 +68,28 @@ impl WhisperEngine {
         // text is reached via `state.get_segment(i)` -> `WhisperSegment::to_str()`.
         let n = state.full_n_segments();
         let mut text = String::new();
+        let mut prob_sum = 0f32;
+        let mut prob_count = 0usize;
         for i in 0..n {
             if let Some(segment) = state.get_segment(i) {
                 text.push_str(segment.to_str()?);
+                for t in 0..segment.n_tokens() {
+                    if let Some(token) = segment.get_token(t) {
+                        prob_sum += token.token_probability();
+                        prob_count += 1;
+                    }
+                }
             }
         }
+        let confidence = if prob_count > 0 {
+            prob_sum / prob_count as f32
+        } else {
+            0.0
+        };
         Ok(Transcription {
             lang,
             text: text.trim().to_string(),
+            confidence,
         })
     }
 

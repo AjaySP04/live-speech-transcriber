@@ -12,7 +12,12 @@ async fn spawn_server() -> (String, Arc<server::AppState>) {
     cfg.whisper_model = "tiny".into();
     let whisper = Arc::new(WhisperEngine::new(&cfg.whisper_model_path(), 4).unwrap());
     let db = Arc::new(Mutex::new(Db::open_in_memory().unwrap()));
-    let state = Arc::new(server::AppState { whisper, db, cfg });
+    let state = Arc::new(server::AppState {
+        whisper: std::sync::RwLock::new(whisper),
+        db,
+        settings: std::sync::RwLock::new(server::AppState::runtime_settings(&cfg)),
+        cfg,
+    });
     let app = server::router(state.clone());
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();

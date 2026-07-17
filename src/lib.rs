@@ -1,5 +1,6 @@
 pub mod config;
 pub mod db;
+pub mod harness;
 pub mod pipeline;
 pub mod segmenter;
 pub mod server;

@@ -9,7 +9,7 @@ ENV CC=clang CXX=clang++
 RUN cargo build --release
 # collect the binary and any dynamic libs ort/sherpa produced next to it
 RUN mkdir /out \
- && cp target/release/live-transcriber /out/ \
+ && cp target/release/tarjuman /out/ \
  && (cp target/release/*.so* /out/ 2>/dev/null || true) \
  && (cp target/release/deps/*.so* /out/ 2>/dev/null || true) \
  && (find / -xdev -name 'libonnxruntime*.so*' -exec cp {} /out/ \; 2>/dev/null || true)

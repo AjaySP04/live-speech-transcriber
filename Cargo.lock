@@ -1044,30 +1044,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92daf443525c4cce67b150400bc2316076100ce0b3686209eb8cf3c31612e6f0"
 
 [[package]]
-name = "live-transcriber"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "axum-server",
- "futures-util",
- "hound",
- "rcgen",
- "rusqlite",
- "serde",
- "serde_json",
- "sherpa-rs",
- "tokio",
- "tokio-tungstenite 0.24.0",
- "toml",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "voice_activity_detector",
- "whisper-rs",
-]
-
-[[package]]
 name = "lock_api"
 version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2019,6 +1995,30 @@ dependencies = [
  "filetime",
  "libc",
  "xattr",
+]
+
+[[package]]
+name = "tarjuman"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "axum-server",
+ "futures-util",
+ "hound",
+ "rcgen",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sherpa-rs",
+ "tokio",
+ "tokio-tungstenite 0.24.0",
+ "toml",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "voice_activity_detector",
+ "whisper-rs",
 ]
 
 [[package]]

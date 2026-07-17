@@ -1,4 +1,4 @@
-use live_transcriber::{config::Config, db::Db, server, whisper::WhisperEngine};
+use tarjuman::{config::Config, db::Db, server, whisper::WhisperEngine};
 use std::sync::{Arc, Mutex};
 
 #[tokio::main]

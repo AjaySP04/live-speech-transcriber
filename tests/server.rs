@@ -1,5 +1,5 @@
 use futures_util::{SinkExt, StreamExt};
-use live_transcriber::{config::Config, db::Db, server, whisper::WhisperEngine};
+use tarjuman::{config::Config, db::Db, server, whisper::WhisperEngine};
 use std::sync::{Arc, Mutex};
 use tokio_tungstenite::tungstenite::Message;
 

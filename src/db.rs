@@ -17,7 +17,11 @@ CREATE TABLE IF NOT EXISTS utterances (
     original_text TEXT NOT NULL,
     english_text TEXT NOT NULL,
     start_ms INTEGER NOT NULL,
-    duration_ms INTEGER NOT NULL
+    duration_ms INTEGER NOT NULL,
+    confidence REAL NOT NULL DEFAULT 0,
+    translated_to TEXT NOT NULL DEFAULT 'en',
+    latency_ms INTEGER NOT NULL DEFAULT 0,
+    blocked INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_utt_session ON utterances(session_id);
 CREATE TABLE IF NOT EXISTS speakers (
@@ -36,6 +40,10 @@ pub struct UtteranceRow {
     pub english_text: String,
     pub start_ms: i64,
     pub duration_ms: i64,
+    pub confidence: f64,
+    pub translated_to: String,
+    pub latency_ms: i64,
+    pub blocked: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -62,10 +70,32 @@ fn blob_to_f32s(b: &[u8]) -> Vec<f32> {
 }
 
 impl Db {
+    /// Columns added after the first release; ALTER fails harmlessly when the
+    /// column already exists, so this is safe to run on every open.
+    fn migrate(conn: &Connection) {
+        let _ = conn.execute(
+            "ALTER TABLE utterances ADD COLUMN confidence REAL NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE utterances ADD COLUMN translated_to TEXT NOT NULL DEFAULT 'en'",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE utterances ADD COLUMN latency_ms INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE utterances ADD COLUMN blocked INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+    }
+
     pub fn open(path: &str) -> Result<Self> {
         let conn = Connection::open(path)?;
         conn.pragma_update(None, "journal_mode", "WAL")?;
         conn.execute_batch(SCHEMA)?;
+        Self::migrate(&conn);
         Ok(Db { conn })
     }
 
@@ -107,9 +137,9 @@ impl Db {
 
     pub fn insert_utterance(&self, session_id: i64, u: &UtteranceRow) -> Result<i64> {
         self.conn.execute(
-            "INSERT INTO utterances (session_id, speaker_num, lang, original_text, english_text, start_ms, duration_ms)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-            params![session_id, u.speaker_num, u.lang, u.original_text, u.english_text, u.start_ms, u.duration_ms],
+            "INSERT INTO utterances (session_id, speaker_num, lang, original_text, english_text, start_ms, duration_ms, confidence, translated_to, latency_ms, blocked)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            params![session_id, u.speaker_num, u.lang, u.original_text, u.english_text, u.start_ms, u.duration_ms, u.confidence, u.translated_to, u.latency_ms, u.blocked],
         )?;
         Ok(self.conn.last_insert_rowid())
     }
@@ -158,7 +188,7 @@ impl Db {
 
     pub fn get_utterances(&self, session_id: i64) -> Result<Vec<UtteranceRow>> {
         let mut stmt = self.conn.prepare(
-            "SELECT speaker_num, lang, original_text, english_text, start_ms, duration_ms
+            "SELECT speaker_num, lang, original_text, english_text, start_ms, duration_ms, confidence, translated_to, latency_ms, blocked
              FROM utterances WHERE session_id = ?1 ORDER BY id",
         )?;
         let rows = stmt.query_map(params![session_id], |r| {
@@ -169,6 +199,10 @@ impl Db {
                 english_text: r.get(3)?,
                 start_ms: r.get(4)?,
                 duration_ms: r.get(5)?,
+                confidence: r.get(6)?,
+                translated_to: r.get(7)?,
+                latency_ms: r.get(8)?,
+                blocked: r.get(9)?,
             })
         })?;
         Ok(rows.collect::<std::result::Result<Vec<_>, _>>()?)
@@ -197,6 +231,10 @@ mod tests {
             english_text: "How are you?".into(),
             start_ms: 1200,
             duration_ms: 900,
+            confidence: 0.87,
+            translated_to: "en".into(),
+            latency_ms: 1250,
+            blocked: false,
         };
         db.insert_utterance(sid, &u).unwrap();
         db.set_session_title(sid, "Test chat").unwrap();
@@ -212,6 +250,8 @@ mod tests {
         assert_eq!(utts.len(), 1);
         assert_eq!(utts[0].english_text, "How are you?");
         assert_eq!(utts[0].lang, "hi");
+        assert!((utts[0].confidence - 0.87).abs() < 1e-9);
+        assert_eq!(utts[0].translated_to, "en");
     }
 
     #[test]

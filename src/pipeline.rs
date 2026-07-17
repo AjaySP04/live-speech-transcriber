@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::db::{Db, UtteranceRow};
+use crate::harness::{Harness, UtteranceDraft};
 use crate::segmenter::{SegmentEvent, Segmenter, SegmenterConfig, CHUNK};
 use crate::speakers::{SpeakerEmbedder, SpeakerRegistry};
 use crate::vad::Vad;
@@ -22,6 +23,16 @@ pub enum PipelineEvent {
         english_text: String,
         start_ms: u64,
         duration_ms: u64,
+        /// Mean whisper token probability for the translation line (0–1).
+        confidence: f32,
+        /// Language the translation line is actually in (the configured
+        /// target, or "en" when whisper had to fall back).
+        translated_to: String,
+        /// Milliseconds from utterance-close to this event (translation delay).
+        latency_ms: u64,
+        /// True when a guardrail withheld the content; the text fields carry
+        /// a placeholder ("Sorry — cannot translate this one.") instead.
+        blocked: bool,
     },
 }
 
@@ -73,6 +84,7 @@ pub fn run_pipeline(
         .map(|u| u.is_empty())
         .unwrap_or(true);
 
+    let harness = Harness::from_config(&deps.cfg);
     let mut segmenter = Segmenter::new(SegmenterConfig {
         vad_threshold: deps.cfg.vad_threshold,
         silence_end_ms: deps.cfg.silence_end_ms,
@@ -102,6 +114,7 @@ pub fn run_pipeline(
                         let _ = event_tx.send(PipelineEvent::Transcribing);
                         handle_utterance(
                             &deps,
+                            &harness,
                             session_id,
                             &samples,
                             start_ms,
@@ -124,6 +137,7 @@ pub fn run_pipeline(
 #[allow(clippy::too_many_arguments)]
 fn handle_utterance(
     deps: &PipelineDeps,
+    harness: &Harness,
     session_id: i64,
     samples: &[i16],
     start_ms: u64,
@@ -133,11 +147,15 @@ fn handle_utterance(
     first_utterance: &mut bool,
     event_tx: &tokio::sync::mpsc::UnboundedSender<PipelineEvent>,
 ) {
+    // Marks when the finished utterance entered processing; the delta at event
+    // time is the translation delay surfaced to the UI and stored in the DB.
+    let received = std::time::Instant::now();
     let audio = i16_to_f32(samples);
 
-    let (lang, original_text, english_text) = if deps.cfg.english_only {
+    let target = deps.cfg.target_lang.clone();
+    let (lang, original_text, translation, translated_to, confidence) = if deps.cfg.english_only {
         match deps.whisper.translate(&audio) {
-            Ok(t) => (t.lang, String::new(), t.text),
+            Ok(t) => (t.lang, String::new(), t.text, "en".to_string(), t.confidence),
             Err(e) => {
                 tracing::error!("translate failed: {e:#}");
                 return;
@@ -159,16 +177,50 @@ fn handle_utterance(
             }
         };
         let eng = match eng {
-            Ok(t) => t.text,
+            Ok(t) => t,
             Err(e) => {
                 tracing::error!("translate failed: {e:#}");
                 return;
             }
         };
-        (orig.lang, orig.text, eng)
+        if orig.lang == target && target != "en" {
+            // The speaker already speaks the user's language: the native
+            // transcription IS the translation line.
+            let text = orig.text.clone();
+            (orig.lang, orig.text, text, target.clone(), orig.confidence)
+        } else {
+            // Whisper only translates to English; non-English targets fall
+            // back to English (the UI marks the fallback) until an MT model
+            // is added.
+            (orig.lang, orig.text, eng.text, "en".to_string(), eng.confidence)
+        }
     };
 
-    if english_text.trim().is_empty() && original_text.trim().is_empty() {
+    let mut draft = UtteranceDraft {
+        lang,
+        original_text,
+        english_text: translation,
+        duration_ms,
+    };
+    // A blocked utterance still becomes a visible transcript entry — with a
+    // placeholder instead of the offending text, which is never stored.
+    let blocked = match harness.process(&mut draft) {
+        Ok(()) => false,
+        Err((guardrail, _reason)) => {
+            draft.original_text.clear();
+            draft.english_text = match guardrail {
+                "language-allowlist" => {
+                    "Sorry — cannot translate this one (unsupported language).".to_string()
+                }
+                _ => "Sorry — cannot translate this one.".to_string(),
+            };
+            true
+        }
+    };
+    let UtteranceDraft { lang, original_text, english_text, .. } = draft;
+    let confidence = if blocked { 0.0 } else { confidence };
+
+    if !blocked && english_text.trim().is_empty() && original_text.trim().is_empty() {
         return; // whisper heard nothing worth keeping
     }
 
@@ -189,6 +241,7 @@ fn handle_utterance(
         }
     };
 
+    let latency_ms = received.elapsed().as_millis() as u64;
     let row = UtteranceRow {
         speaker_num: speaker as i64,
         lang: lang.clone(),
@@ -196,12 +249,16 @@ fn handle_utterance(
         english_text: english_text.clone(),
         start_ms: start_ms as i64,
         duration_ms: duration_ms as i64,
+        confidence: confidence as f64,
+        translated_to: translated_to.clone(),
+        latency_ms: latency_ms as i64,
+        blocked,
     };
     if let Err(e) = deps.db.lock().unwrap().insert_utterance(session_id, &row) {
         tracing::error!("db insert failed: {e:#}");
     }
 
-    if *first_utterance {
+    if *first_utterance && !blocked {
         let title: String = english_text
             .split_whitespace()
             .take(8)
@@ -218,6 +275,10 @@ fn handle_utterance(
         english_text,
         start_ms,
         duration_ms,
+        confidence,
+        translated_to,
+        latency_ms,
+        blocked,
     });
 }
 

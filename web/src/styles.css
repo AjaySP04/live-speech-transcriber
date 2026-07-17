@@ -102,6 +102,60 @@ nav { display: flex; align-items: center; gap: 0.25rem; }
 
 main { max-width: 680px; margin: 0 auto; padding: 0.6rem 1.25rem 3rem; }
 
+/* ---------- settings bar ---------- */
+
+.settings-bar {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 1.25rem 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+.settings-bar label { display: inline-flex; align-items: center; gap: 0.4rem; }
+.settings-bar select {
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0.25rem 0.45rem;
+}
+.settings-note { font-size: 0.75rem; }
+.settings-note.legend { display: inline-flex; align-items: center; gap: 0.35rem; }
+.settings-note.legend .conf-dot { margin: 0 0.1rem 0 0.35rem; }
+.settings-note.loading { color: var(--amber); }
+.settings-note.error { color: var(--danger); }
+
+/* ---------- confidence ---------- */
+
+.conf-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  vertical-align: 0.08rem;
+}
+.conf-dot.conf-high { background: #3f9e63; }
+.conf-dot.conf-medium { background: var(--amber); }
+.conf-dot.conf-low { background: var(--danger); }
+.couplet .english.conf-low { color: var(--ink-2); }
+
+.couplet.blocked { border-inline-start-color: var(--line); }
+.couplet .english.blocked-line { color: var(--ink-2); font-style: italic; font-size: 0.95rem; }
+
+.fallback {
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  padding: 0 0.45rem;
+  font-size: 0.68rem;
+}
+
 /* ---------- controls ---------- */
 
 .controls { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; padding: 0.4rem 0 0.9rem; }

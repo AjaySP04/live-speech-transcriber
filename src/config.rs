@@ -19,6 +19,17 @@ pub struct Config {
     pub min_new_speaker_ms: u32,
     pub whisper_threads: i32,
     pub tls: bool,
+    pub profanity_filter: bool,
+    /// NSFW/abuse policy: "block" (drop dense explicit content, mask single
+    /// hits), "mask" (never drop, always mask), or "off".
+    pub nsfw_policy: String,
+    /// BCP-ish whisper language codes the pipeline accepts; anything else is dropped.
+    pub allowed_languages: Vec<String>,
+    /// Language the translation line is rendered in. Whisper can only translate
+    /// to English, so non-"en" targets show native transcription when the
+    /// speaker already speaks the target language and fall back to English
+    /// otherwise (until a dedicated MT model lands).
+    pub target_lang: String,
 }
 
 impl Default for Config {
@@ -38,6 +49,10 @@ impl Default for Config {
             min_new_speaker_ms: 2000,
             whisper_threads: 4,
             tls: false,
+            profanity_filter: true,
+            nsfw_policy: "block".into(),
+            allowed_languages: vec!["en".into(), "hi".into(), "ur".into(), "ar".into()],
+            target_lang: "en".into(),
         }
     }
 }

@@ -169,6 +169,10 @@ All keys in `config.toml` are optional; defaults below apply to omitted keys. `p
 | `min_new_speaker_ms` | `2000` | Utterances shorter than this can never create a *new* speaker — short clips embed unreliably, so they're attributed to the nearest existing speaker instead. |
 | `whisper_threads` | `8` | CPU threads for Whisper inference. |
 | `tls` | `false` | Serve HTTPS with a self-signed cert (generated into `data_dir` on first start). Required for mic access from non-localhost origins. |
+| `profanity_filter` | `true` | Masks abusive language in both the original transcription and the English translation before storage/display — mild terms keep their first and last letter (`f**k`), severe terms and slurs keep only the first (`c***`). Includes common romanized Hindi/Urdu abuse. Set `false` to disable. |
+| `nsfw_policy` | `"block"` | NSFW/abuse policy for transcript output. `block`: utterances with dense explicit content or multiple slurs are withheld entirely — the transcript shows *"Sorry — cannot translate this one."* instead, and nothing offensive is stored; single hits are masked. `mask`: never withhold, always mask. `off`: disabled. |
+| `allowed_languages` | `["en","hi","ur","ar"]` | Languages the pipeline accepts; utterances detected as any other language are dropped by the language-allowlist guardrail. |
+| `target_lang` | `"en"` | Language of the translation line (selectable in the UI). Whisper only translates to English, so non-English targets show native transcription when the speaker already speaks the target language and fall back to English (marked in the UI) otherwise. |
 
 ## HTTP & WebSocket API
 
@@ -207,6 +211,7 @@ src/
 ├── config.rs      # config.toml + env overrides
 ├── server.rs      # axum router: REST, WebSocket, static files
 ├── pipeline.rs    # per-connection orchestrator thread (audio in → events out)
+├── harness/       # AI harness: Guardrail + Tool seams (mod.rs), profanity guardrail
 ├── segmenter.rs   # pure utterance-segmentation state machine
 ├── vad.rs         # Silero VAD wrapper (model bundled in-crate)
 ├── whisper.rs     # whisper.cpp wrapper: transcribe + translate

@@ -1,7 +1,7 @@
 port = 8080
 models_dir = "models"
 data_dir = "data"
-whisper_model = "medium"
+whisper_model = "large-v3"
 english_only = false
 vad_threshold = 0.5
 silence_end_ms = 550
@@ -12,3 +12,7 @@ speaker_similarity_threshold = 0.5
 min_new_speaker_ms = 2000
 whisper_threads = 8
 tls = false
+profanity_filter = true
+nsfw_policy = "block"
+allowed_languages = ["en", "hi", "ur", "ar"]
+target_lang = "en"

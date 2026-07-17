@@ -1,0 +1,14 @@
+port = 8080
+models_dir = "models"
+data_dir = "data"
+whisper_model = "medium"
+english_only = false
+vad_threshold = 0.5
+silence_end_ms = 700
+pre_roll_ms = 300
+min_speech_ms = 250
+max_utterance_s = 25
+speaker_similarity_threshold = 0.65
+min_new_speaker_ms = 2000
+whisper_threads = 8
+tls = false

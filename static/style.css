@@ -1,0 +1,25 @@
+* { box-sizing: border-box; margin: 0; }
+body { font-family: system-ui, sans-serif; background: #101418; color: #e8eaed; min-height: 100vh; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1.2rem; border-bottom: 1px solid #2a2f36; }
+h1 { font-size: 1.1rem; font-weight: 600; }
+.tab { background: none; border: 1px solid #2a2f36; color: #aaa; padding: 0.4rem 1rem; border-radius: 999px; margin-left: 0.5rem; cursor: pointer; }
+.tab.active { color: #fff; border-color: #4f8cff; }
+main { max-width: 720px; margin: 0 auto; padding: 1rem; }
+.controls { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.mic { font-size: 1rem; padding: 0.6rem 1.4rem; border-radius: 999px; border: none; background: #4f8cff; color: #fff; cursor: pointer; }
+.status { padding: 0.25rem 0.8rem; border-radius: 999px; font-size: 0.85rem; background: #2a2f36; }
+.status.speech { background: #1d4ed8; }
+.status.transcribing { background: #b45309; }
+.status.listening { background: #166534; }
+.status.reconnecting { background: #991b1b; }
+.toggle { font-size: 0.85rem; color: #aaa; }
+.banner { margin-top: 1rem; padding: 0.8rem 1rem; background: #7f1d1d; border-radius: 8px; }
+.hidden { display: none; }
+.transcript { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.9rem; max-height: 70vh; overflow-y: auto; }
+.utterance { background: #1a1f26; border-radius: 10px; padding: 0.7rem 0.9rem; }
+.speaker { font-weight: 700; margin-right: 0.5rem; }
+.lang { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+.original { margin-top: 0.3rem; font-size: 1.05rem; }
+.english { margin-top: 0.2rem; color: #9fc0ff; }
+.session-item { display: block; width: 100%; text-align: left; background: #1a1f26; color: #e8eaed; border: none; border-radius: 8px; padding: 0.7rem 0.9rem; margin-bottom: 0.5rem; cursor: pointer; }
+.session-item:hover { background: #232a33; }

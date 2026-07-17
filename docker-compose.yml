@@ -1,0 +1,11 @@
+services:
+  transcriber:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./config.toml:/app/config.toml:ro
+    environment:
+      - LT_WHISPER_MODEL=${LT_WHISPER_MODEL:-medium}

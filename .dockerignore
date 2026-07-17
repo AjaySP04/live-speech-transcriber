@@ -1,0 +1,6 @@
+target
+models
+data
+.git
+docs
+tests/fixtures

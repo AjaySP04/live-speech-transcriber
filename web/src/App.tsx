@@ -14,6 +14,7 @@ export default function App() {
     <>
       <header>
         <h1 className="wordmark">
+          <img src="/logo.svg" alt="" className="logo" />
           <span className="wm-ar" lang="ur" dir="rtl">
             ترجمان
           </span>

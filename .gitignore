@@ -1,5 +1,7 @@
 /.superpowers
 /docs/superpowers
+/static
+web/node_modules
 
 /target
 /models

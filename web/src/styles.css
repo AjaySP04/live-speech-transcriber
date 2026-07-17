@@ -1,0 +1,262 @@
+/* Tarjuman — manuscript ink & lapis. Light + dark via system preference,
+   overridable with data-theme on <html> (persisted by ui/theme.ts). */
+
+:root {
+  --paper: #f6f7f5;
+  --card: #ffffff;
+  --ink: #1d2126;
+  --ink-2: #5a6068;
+  --line: #dee0da;
+  --lapis: #28558a;
+  --on-lapis: #ffffff;
+  --amber: #b07c22;
+  --danger: #a33b3b;
+  --spk-s: 52%;
+  --spk-l: 38%;
+  --font-orig: Georgia, "Noto Naskh Arabic", "Geeza Pro", "Devanagari MT", "Nirmala UI", serif;
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1214;
+    --card: #171b20;
+    --ink: #e4e2dc;
+    --ink-2: #9ba1a8;
+    --line: #272c32;
+    --lapis: #8fb6e8;
+    --on-lapis: #0f1214;
+    --amber: #dfae5c;
+    --danger: #e08585;
+    --spk-s: 45%;
+    --spk-l: 68%;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1214;
+  --card: #171b20;
+  --ink: #e4e2dc;
+  --ink-2: #9ba1a8;
+  --line: #272c32;
+  --lapis: #8fb6e8;
+  --on-lapis: #0f1214;
+  --amber: #dfae5c;
+  --danger: #e08585;
+  --spk-s: 45%;
+  --spk-l: 68%;
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible { outline: 2px solid var(--lapis); outline-offset: 2px; border-radius: 2px; }
+
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+/* ---------- header ---------- */
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 1.4rem 1.25rem 0.9rem;
+}
+
+.wordmark { display: flex; align-items: baseline; gap: 0.6rem; font-weight: 400; }
+.wm-ar { font-family: var(--font-orig); font-size: 1.7rem; color: var(--lapis); }
+.wm-en {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: var(--ink-2);
+}
+
+nav { display: flex; align-items: center; gap: 0.25rem; }
+
+.tab {
+  padding: 0.35rem 0.7rem;
+  color: var(--ink-2);
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+.tab.active { color: var(--ink); border-bottom-color: var(--lapis); }
+.tab:hover { color: var(--ink); }
+
+.theme { font-size: 1.05rem; padding: 0.2rem 0.45rem; color: var(--ink-2); border-radius: 6px; }
+.theme:hover { color: var(--ink); }
+
+/* ---------- layout ---------- */
+
+main { max-width: 680px; margin: 0 auto; padding: 0.6rem 1.25rem 3rem; }
+
+/* ---------- controls ---------- */
+
+.controls { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; padding: 0.4rem 0 0.9rem; }
+
+.mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 1.35rem;
+  border-radius: 999px;
+  background: var(--lapis);
+  color: var(--on-lapis);
+  font-weight: 600;
+  transition: filter 120ms ease;
+}
+.mic::before { content: ""; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: currentColor; opacity: 0.85; }
+.mic:hover { filter: brightness(1.08); }
+.mic.running { background: transparent; color: var(--danger); box-shadow: inset 0 0 0 1.5px var(--danger); }
+.mic.running::before { border-radius: 2px; }
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+.status .dot { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--line); }
+.status.listening .dot { background: var(--lapis); animation: breathe 2.4s ease-in-out infinite; }
+.status.speech .dot { background: var(--amber); animation: breathe 0.9s ease-in-out infinite; }
+.status.transcribing .dot { background: var(--amber); }
+.status.reconnecting .dot { background: var(--danger); animation: breathe 0.9s ease-in-out infinite; }
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.55); opacity: 0.55; }
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  cursor: pointer;
+  user-select: none;
+}
+.switch input { accent-color: var(--lapis); width: 0.95rem; height: 0.95rem; }
+
+/* ---------- banner & empty states ---------- */
+
+.banner {
+  margin: 0.4rem 0 0.8rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  font-size: 0.88rem;
+}
+
+.empty {
+  padding: 2.2rem 0.5rem;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  max-width: 42ch;
+  margin: 0 auto;
+}
+
+/* ---------- transcript: translation couplets ---------- */
+
+.transcript { display: flex; flex-direction: column; gap: 0.65rem; }
+
+.couplet {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-inline-start: 3px solid hsl(var(--spk-h, 210) var(--spk-s) var(--spk-l));
+  border-radius: 10px;
+  padding: 0.65rem 0.95rem 0.75rem;
+  animation: arrive 220ms ease-out;
+}
+
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+
+.couplet .meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.3rem;
+}
+.couplet .speaker { color: hsl(var(--spk-h, 210) var(--spk-s) var(--spk-l)); font-weight: 700; }
+.couplet .lang { color: var(--ink-2); text-transform: uppercase; }
+.couplet .time { color: var(--ink-2); margin-left: auto; }
+
+.couplet .original {
+  font-family: var(--font-orig);
+  font-size: 1.28rem;
+  line-height: 1.9;
+  unicode-bidi: plaintext;
+}
+
+.couplet .english { color: var(--ink-2); font-size: 0.95rem; margin-top: 0.15rem; }
+
+/* the interpretation stands alone when there is no original (english_only mode) */
+.couplet.no-original .english { color: var(--ink); font-size: 1.05rem; }
+
+.transcript.hide-original .original { display: none; }
+.transcript.hide-original .english { color: var(--ink); font-size: 1.05rem; }
+
+/* ---------- history ---------- */
+
+.session-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.4rem; }
+
+.session-item {
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.65rem 0.95rem;
+  transition: border-color 120ms ease;
+}
+.session-item:hover { border-color: var(--lapis); }
+.session-item .s-title { display: block; font-weight: 600; }
+.session-item .s-meta {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+  margin-top: 0.15rem;
+}
+
+.detail-title { font-size: 1.05rem; font-weight: 600; margin: 0.4rem 0 0.6rem; }
+
+/* ---------- small screens ---------- */
+
+@media (max-width: 480px) {
+  header { padding: 1rem 1rem 0.6rem; }
+  main { padding: 0.4rem 0.8rem 2.5rem; }
+  .couplet .original { font-size: 1.16rem; }
+  .switch { margin-left: 0; }
+}
+
+/* ---------- reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .couplet { animation: none; }
+  .status .dot { animation: none !important; }
+}
